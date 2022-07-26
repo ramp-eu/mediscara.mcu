@@ -1,5 +1,7 @@
 # Master Control Unit
 
+This component serves as an IoT Device connected to a [FIWARE IoT Agent (JSON Payload)](https://github.com/FIWARE/tutorials.IoT-Agent-JSON/tree/131931b2e0460efbacd598c4c16b39872afa8042)
+
 ## Communication protocol
 
 A minimal communication protocol between the MCU and the IoT device is necessary.
