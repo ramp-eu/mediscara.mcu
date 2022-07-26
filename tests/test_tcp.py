@@ -1,22 +1,8 @@
-from time import sleep
-from mcu.connectors.tcp import TCPServer
 
-def test_tcp():
-    def connected(peer: str):
-        print(f"Connected to: {peer}")
+from mcu.config import add_tcp_server
 
-    def received(msg: str):
-        print(f"Received: {msg}")
-    try:
-        TCPServer(connection_made_callback=connected,
-                  data_received_callback=received,
-                  ).start()
-        while True:
-            sleep(2)
-            print("running")
-
-    except KeyboardInterrupt:
-        pass
+def test_add_tcp():
+    print(add_tcp_server('localhost', 65432))
 
 if __name__ == "__main__":
-    test_tcp()
+    test_add_tcp()

@@ -2,13 +2,17 @@
 'external' directory"""
 import json
 import logging
+from dotenv import load_dotenv
 
 from flask import Flask, make_response, request
 
 from .models.command import Command
-from .connectors.tcp import TCPServer
+from .config import SERIAL_CONNECTIONS, TCP_CONNECTIONS
 
 logging.getLogger("werkzeug").disabled = True  # disable flask logger
+
+# load the environment variables from .env
+load_dotenv()
 
 # create Flask app instance
 app = Flask(__name__)
@@ -26,7 +30,7 @@ def api():
     logging.info("Incoming %s: %s", request.method, data_json)
 
     if request.method == "GET":
-        return make_response(json.dumps({'job_select': 'OK'}), 200)
+        return make_response(json.dumps({'': 'BAD REQUEST'}), 400)
 
     if request.method == "POST":
         for command in COMMANDS:
@@ -39,20 +43,13 @@ def api():
 
     return make_response(json.dumps({'': 'BAD_COMMAND'}), 400)
 
-def tcp_connection_made(peer: str):
-    """Gets called when a new tcp connection is made"""
-    logging.info("TCP Connection to: %s", peer)
+def main():
+    """Main entrypoint and setup method for the flask app"""
+    # initialize the connections
+    for value in TCP_CONNECTIONS:
+        value.start()
 
-def tcp_connection_lost():
-    """Gets called when an existing tcp connection is lost"""
-    logging.info("TCP Connection lost")
+    for value in SERIAL_CONNECTIONS:
+        value.start()
 
-def tcp_received(msg: str):
-    """Gets called when a tcp message is received"""
-    logging.info("TCP Message: %s", msg)
-
-# Start the TCP Server
-TCPServer(connection_made_callback=tcp_connection_made,
-          connection_lost_callback=tcp_connection_lost,
-          data_received_callback=tcp_received,
-          ).start()
+    app.run(port=2000)

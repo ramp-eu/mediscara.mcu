@@ -3,7 +3,6 @@ from time import sleep
 from mcu.models.command import Command
 
 
-
 def test_execute_command():
     """Tests command execution"""
     def dummy_callback(attr: str, info: str):

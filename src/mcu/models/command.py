@@ -7,16 +7,12 @@ import os
 import pkgutil
 from threading import Thread
 from typing import List
-from dotenv import load_dotenv
 
 import requests
 
 from mcu import external
 
 CLASS_NAME = "CustomCommand"
-
-# load the environment variables from .env
-load_dotenv()
 
 # get environment variables
 API_KEY = os.getenv('API_KEY')
@@ -49,7 +45,8 @@ class Command(ABC):
     def target(self):
         """The target function of the thread running the command
 
-        The child class must override this method"""
+        The child class must override this method
+        """
 
     def __on_finished(self):
         if self._command_result is None:
@@ -117,24 +114,27 @@ class Command(ABC):
 
     def __update_attribute(self, info: str):
         """Send a post request updating the given attribute"""
-        response = requests.post(f'{IOTA_URL}/{IOTA_PATH}',
-                                headers={
-                                    'fiware-service': FIWARE_SERVICE,
-                                    'fiware-servicepath': FIWARE_SERVICEPATH,
-                                    'Content-Type': 'application/json',
-                                },
-                                params={
-                                    'k': API_KEY,
-                                    'i': MCU_ID
-                                },
-                                json={
-                                    f'{self.keyword}_info': info
-                                })
+        try:
+            response = requests.post(f'{IOTA_URL}/{IOTA_PATH}',
+                                    headers={
+                                        'fiware-service': FIWARE_SERVICE,
+                                        'fiware-servicepath': FIWARE_SERVICEPATH,
+                                        'Content-Type': 'application/json',
+                                    },
+                                    params={
+                                        'k': API_KEY,
+                                        'i': MCU_ID
+                                    },
+                                    json={
+                                        f'{self.keyword}_info': info
+                                    })
 
-        if response.status_code != 200:
-            logging.warning(
-                "Could not update attribute '%s': (%s) %s",
-                f'{self.keyword}_info',
-                response.status_code,
-                response.content.decode('utf-8')
-                )
+            if response.status_code != 200:
+                logging.warning(
+                    "Could not update attribute '%s': (%s) %s",
+                    f'{self.keyword}_info',
+                    response.status_code,
+                    response.content.decode('utf-8')
+                    )
+        except requests.ConnectionError:
+            logging.warning("Unable to reach server")
