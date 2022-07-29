@@ -46,6 +46,9 @@ class Command(ABC):
         """The target function of the thread running the command
 
         The child class must override this method
+
+        NOTE: The child class should set the _command_result attribute
+        before the method finishes execution
         """
 
     def __on_finished(self):
@@ -55,7 +58,10 @@ class Command(ABC):
                 )
             return
 
-        self.__update_attribute(self._command_result)
+        self.update_attribute(
+            attribute=f'{self.__keyword}_info',
+            info=self._command_result,
+            )
 
     @property
     def keyword(self):
@@ -112,7 +118,8 @@ class Command(ABC):
 
         return external_command_instances
 
-    def __update_attribute(self, info: str):
+    @staticmethod
+    def update_attribute(attribute: str, info: str):
         """Send a post request updating the given attribute"""
         try:
             response = requests.post(f'{IOTA_URL}/{IOTA_PATH}',
@@ -126,13 +133,13 @@ class Command(ABC):
                                         'i': MCU_ID
                                     },
                                     json={
-                                        f'{self.keyword}_info': info
+                                        attribute: info
                                     })
 
             if response.status_code != 200:
                 logging.warning(
                     "Could not update attribute '%s': (%s) %s",
-                    f'{self.keyword}_info',
+                    attribute,
                     response.status_code,
                     response.content.decode('utf-8')
                     )

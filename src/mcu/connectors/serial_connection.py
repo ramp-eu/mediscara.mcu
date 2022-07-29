@@ -4,7 +4,7 @@ import logging
 from threading import Thread
 from time import sleep
 from typing import Callable, List
-from serial import Serial, serial_for_url
+from serial import Serial, serial_for_url, SerialException
 
 class SerialServer:
     """Class to implement communication over a serial connection"""
@@ -36,49 +36,75 @@ class SerialServer:
         self.__running = False
         self.__refresh_rate = refresh_rate
         self.__received_callbacks: List[Callable[[str], None]] = []
+        self.__error_callbacks: List[Callable[[Exception], None]] = []
         self.__thread = Thread(target=self._target, daemon=True)
 
         if port is None:
             logging.warning("Connecting to the serial loopback interface")
-            self.__port = serial_for_url('loop://')
+            self.__serial = serial_for_url('loop://')
 
         else:
-            self.__port = Serial(port=port, baudrate=baudrate)
+            self.__serial = Serial(baudrate=baudrate)
+            self.__serial.port = port
 
 
     def start(self):
         """Starts listening on the given port"""
         self.__running = True
-        self.__thread.start()
+
+        try:
+            self.__serial.open()
+            self.__thread.start()
+
+        except SerialException as err:
+            _ = [callback(err) for callback in self.__error_callbacks]
 
     def stop(self):
         """Stops listening to the port"""
         self.__running = False
 
-    def send(self, msg: str):
+    def send(self, msg: str) -> bool:
         """Sends the data
 
         Args:
             msg (str): The message to be sent
-        """
-        self.__port.write(msg.encode('ascii'))
 
-    def register_callback(self, received: Callable[[str], None]) -> None:
-        """Registers a callback method that gets called when there is incoming messages"""
-        self.__received_callbacks.append(received)
+        Returns:
+            (bool): True if the operation was successful, False if an error occurred
+        """
+        try:
+            self.__serial.write(msg.encode('ascii'))
+            return True
+
+        except SerialException:
+            return False
+
+    def register_callback(self,
+                          received: Callable[[str], None] = None,
+                          error: Callable[[Exception], None] = None) -> None:
+        """Register callback methods for error handling and receiving messages"""
+        if received is not None:
+            self.__received_callbacks.append(received)
+
+        if error is not None:
+            self.__error_callbacks.append(error)
 
     def _target(self):
         while self.__running:
-            if self.__port.in_waiting:
-                data = self.__port.read_all().decode()
-                _ = [callback(data) for callback in self.__received_callbacks]
+            try:
+                if self.__serial.in_waiting:
+                    data = self.__serial.read_all().decode()
+                    _ = [callback(data) for callback in self.__received_callbacks]
 
-            sleep(self.__refresh_rate)
+                sleep(self.__refresh_rate)
+
+            except SerialException as e:
+                _ = [callback(e) for callback in self.__error_callbacks]
 
     @property
     def port(self):
         """Returns the port associated with this server instance"""
-        return self.__port
+        return self.__serial
 
     @property
     def running(self):

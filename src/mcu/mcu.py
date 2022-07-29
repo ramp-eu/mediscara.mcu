@@ -2,17 +2,26 @@
 'external' directory"""
 import json
 import logging
+import os
+import sys
 from dotenv import load_dotenv
 
 from flask import Flask, make_response, request
 
 from .models.command import Command
-from .config import SERIAL_CONNECTIONS, TCP_CONNECTIONS
+from .config import SERIAL_CONNECTIONS, TCP_CONNECTIONS, report_error
 
 logging.getLogger("werkzeug").disabled = True  # disable flask logger
 
 # load the environment variables from .env
 load_dotenv()
+
+HOST = os.getenv('HOST')
+PORT = os.getenv('PORT')
+
+if HOST is None or PORT is None:
+    logging.fatal("Please set the HOST and PORT environment variables")
+    sys.exit(1)
 
 # create Flask app instance
 app = Flask(__name__)
@@ -43,8 +52,16 @@ def api():
 
     return make_response(json.dumps({'': 'BAD_COMMAND'}), 400)
 
+def on_error(error: str):
+    """Gets called when a command runs into an error"""
+    logging.info('Got error: %s', error)
+    Command.update_attribute(attribute="e", info=error)
+
 def main():
     """Main entrypoint and setup method for the flask app"""
+    # set the error callback method
+    report_error.callback = on_error
+
     # initialize the connections
     for value in TCP_CONNECTIONS:
         value.start()
@@ -52,4 +69,4 @@ def main():
     for value in SERIAL_CONNECTIONS:
         value.start()
 
-    app.run(port=2000)
+    app.run(host=HOST, port=PORT)
