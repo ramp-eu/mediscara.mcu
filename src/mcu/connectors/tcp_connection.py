@@ -153,11 +153,12 @@ class TCPServer:
             async with server:
                 await server.serve_forever()
 
-        except ConnectionRefusedError as err:
+        except (ConnectionRefusedError, OSError) as err:
             logging.warning("TCP Error: %s", str(err))
 
         finally:
-            loop.close()
+            if not loop.is_running:
+                loop.close()
 
     @property
     def host(self):

@@ -47,7 +47,9 @@ def api():
                 if command.running:
                     return make_response(json.dumps({command.keyword: 'BUSY'}), 503)
 
-                command.execute()
+                args = data_json[command.keyword]  # get the value for the key
+
+                command.execute(args)
                 return make_response(json.dumps({command.keyword: 'RECEIVED'}), 200)
 
     return make_response(json.dumps({'': 'BAD_COMMAND'}), 400)
