@@ -30,19 +30,19 @@ class Command(ABC):
         self.__thread = None
         self._command_result = None
 
-    def execute(self):
+    def execute(self, payload):
         """Executes the command in a separate thread in the background
         """
         self._command_result = None
-        self.__thread = Thread(target=self.__target_inner, daemon=True)
+        self.__thread = Thread(target=self.__target_inner, args=[payload], daemon=True)
         self.__thread.start()
 
-    def __target_inner(self):
-        self.target()
+    def __target_inner(self, payload):
+        self.target(payload)
         self.__on_finished()
 
     @abstractmethod
-    def target(self):
+    def target(self, *args):
         """The target function of the thread running the command
 
         The child class must override this method
@@ -89,14 +89,6 @@ class Command(ABC):
             imported = importlib.import_module(f"mcu.external.{module}")
             try:
                 klass = getattr(imported, CLASS_NAME)
-
-            except AttributeError:
-                logging.warning("Module %s should have a class named %s",
-                                imported,
-                                CLASS_NAME,
-                                )
-
-            try:
                 instance = klass()
                 if not isinstance(instance, Command):
                     logging.warning(
@@ -107,6 +99,12 @@ class Command(ABC):
                         )
                     continue
                 external_command_instances.append(instance)
+
+            except AttributeError:
+                logging.warning("Module %s should have a class named %s",
+                                imported,
+                                CLASS_NAME,
+                                )
 
             except TypeError as error:
                 # gets thrown when there is a missing argument
