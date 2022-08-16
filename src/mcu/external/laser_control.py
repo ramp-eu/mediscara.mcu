@@ -1,3 +1,4 @@
+"""Module for handling communication with the laser controller"""
 import logging
 from mcu.models.command import Command
 from mcu.config import add_serial_server
@@ -15,6 +16,7 @@ class CustomCommand(Command):
         self.__serial.register_callback(self.serial_received)
 
     def serial_received(self, msg: str):
+        """Gets called when serial communication is received"""
         logging.info("Arduino msg: %s", msg)
 
     def target(self, *args):
