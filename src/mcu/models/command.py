@@ -38,7 +38,12 @@ class Command(ABC):
         self.__thread.start()
 
     def __target_inner(self, payload):
-        self.target(payload)
+        try:
+            self.target(payload)
+
+        except Exception as error: # pylint: disable=broad-except
+            logging.info("An exception occurred while executing command: %s", str(error))
+
         self.__on_finished()
 
     @abstractmethod
@@ -98,6 +103,7 @@ class Command(ABC):
                         Command.__name__
                         )
                     continue
+
                 external_command_instances.append(instance)
 
             except AttributeError:

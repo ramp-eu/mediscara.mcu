@@ -10,6 +10,7 @@ from flask import Flask, make_response, request
 
 from .models.command import Command
 from .config import SERIAL_CONNECTIONS, TCP_CONNECTIONS, report_error
+from mcu import config
 
 logging.getLogger("werkzeug").disabled = True  # disable flask logger
 
@@ -54,15 +55,9 @@ def api():
 
     return make_response(json.dumps({'': 'BAD_COMMAND'}), 400)
 
-def on_error(error: str):
-    """Gets called when a command runs into an error"""
-    logging.info('Got error: %s', error)
-    Command.update_attribute(attribute="e", info=error)
 
 def main():
     """Main entrypoint and setup method for the flask app"""
-    # set the error callback method
-    report_error.callback = on_error
 
     # initialize the connections
     for value in TCP_CONNECTIONS:
@@ -70,5 +65,7 @@ def main():
 
     for value in SERIAL_CONNECTIONS:
         value.start()
+
+    config.clear_errors()  # clear the errors
 
     app.run(host=HOST, port=PORT)

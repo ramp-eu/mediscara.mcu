@@ -3,6 +3,7 @@ import logging
 from typing import List
 
 from mcu.connectors.serial_connection import SerialServer
+from mcu.models.command import Command
 from .connectors.tcp_connection import TCPCLient, TCPServer
 
 TCP_CONNECTIONS: List[TCPServer|TCPCLient] = []
@@ -34,8 +35,9 @@ def add_serial_server(port: str = None, baudrate: int = 9600) -> SerialServer:
 
 def report_error(error_msg: str):
     """This method can be used to report errors to the runtime"""
-    if not hasattr(report_error, 'callback'):
-        logging.error('No error callback is registered')
+    logging.info('Got error: %s', error_msg)
+    Command.update_attribute(attribute="e", info=error_msg)
 
-    else:
-        report_error.callback(error_msg) # pylint: disable=no-member
+def clear_errors():
+    """This method can be used to clear previously set errors"""
+    Command.update_attribute(attribute="e", info="")
