@@ -1,37 +1,34 @@
+"""Module to implement a flask web server with the custom commands defined in the
+'external' directory"""
 import json
 import logging
-from datetime import datetime
 import os
-from time import sleep
-from threading import Thread
-from typing import Callable
-from urllib import parse
+import sys
+from dotenv import load_dotenv
 
 from flask import Flask, make_response, request
-from dotenv import load_dotenv
-import requests
 
-# import communication
+from .models.command import Command
+from .config import SERIAL_CONNECTIONS, TCP_CONNECTIONS
+from . import config
 
 logging.getLogger("werkzeug").disabled = True  # disable flask logger
-
-# create Flask app instance
-app = Flask(__name__)
 
 # load the environment variables from .env
 load_dotenv()
 
-# get environment variables
-API_KEY = os.getenv('API_KEY')
-FIWARE_SERVICE = os.getenv('FIWARE_SERVICE')
-FIWARE_SERVICEPATH = os.getenv("FIWARE_SERVICEPATH")
-MCU_ID = os.getenv('MCU_ID')
-IOTA_URL = os.getenv('IOTA_URL')
-IOTA_PATH = os.getenv('IOTA_PATH')
+HOST = os.getenv('HOST')
+PORT = os.getenv('PORT')
 
-JOB_SELECT = 'job_select'
-MEASURE_PCB = 'measure_pcb'
-MEASURE_LABEL = 'measure_label'
+if HOST is None or PORT is None:
+    logging.fatal("Please set the HOST and PORT environment variables")
+    sys.exit(1)
+
+# create Flask app instance
+app = Flask(__name__)
+
+# Load the command class instances
+COMMANDS = Command.load_commands()
 
 @app.route('/api', methods=["GET", "POST"])
 def api():
@@ -43,74 +40,32 @@ def api():
     logging.info("Incoming %s: %s", request.method, data_json)
 
     if request.method == "GET":
-        return make_response(json.dumps({'job_select': 'OK'}), 200)
+        return make_response(json.dumps({'': 'BAD REQUEST'}), 400)
 
-    elif request.method == "POST":
-        if JOB_SELECT in keys:
-            selected_job = data_json[JOB_SELECT]
-            return make_response(json.dumps({JOB_SELECT: f'selected: {selected_job} OK'}), 200)
+    if request.method == "POST":
+        for command in COMMANDS:
+            if command.keyword in keys:
+                if command.running:
+                    return make_response(json.dumps({command.keyword: 'BUSY'}), 503)
 
-        elif MEASURE_PCB in keys:
-            thread_started =  manage_threads(target=measure_pcb)
+                args = data_json[command.keyword]  # get the value for the key
 
-            if thread_started:
-                return make_response(json.dumps({MEASURE_PCB: "RECEIVED"}), 200)
+                command.execute(args)
+                return make_response(json.dumps({command.keyword: 'RECEIVED'}), 200)
 
-            return make_response(json.dumps({MEASURE_PCB: 'BUSY'}), 200)
+    return make_response(json.dumps({'': 'BAD_COMMAND'}), 400)
 
-        elif MEASURE_LABEL in keys:
-            thread_started =  manage_threads(target=measure_label)
 
-            if thread_started:
-                return make_response(json.dumps({MEASURE_LABEL: "RECEIVED"}), 200)
+def main():
+    """Main entrypoint and setup method for the flask app"""
 
-            return make_response(json.dumps({MEASURE_LABEL: 'BUSY'}), 200)
+    # initialize the connections
+    for value in TCP_CONNECTIONS:
+        value.start()
 
-        return make_response(json.dumps({'job_select': 'BAD_COMMAND'}), 400)
+    for value in SERIAL_CONNECTIONS:
+        value.start()
 
-def manage_threads(target: Callable):
-    if hasattr(manage_threads, "current_task"):
-        # return false if it is still running
-        if isinstance(manage_threads.current_task, Thread) and manage_threads.current_task.is_alive():
-            return False
+    config.clear_errors()  # clear the errors
 
-    manage_threads.current_task = Thread(target=target, daemon=True)
-    manage_threads.current_task.start()
-
-    return True
-
-manage_threads.current_task = None
-
-def measure_label() -> bool:
-    logging.warning("Implement %s correctly", measure_label.__name__)
-    sleep(5)
-    update_attribute(f'{measure_label.__name__}_info', info="OK")
-
-def measure_pcb() -> bool:
-    logging.warning("Implement %s correctly", measure_pcb.__name__)
-    sleep(5)
-    update_attribute(f'{measure_pcb.__name__}_info', info="OK")
-
-def update_attribute(attribute: str, info: str):
-    """Send a post request updating the given attribute"""
-    response = requests.post(f'{IOTA_URL}/{IOTA_PATH}',
-                             headers={
-                                 'fiware-service': FIWARE_SERVICE,
-                                 'fiware-servicepath': FIWARE_SERVICEPATH,
-                                 'Content-Type': 'application/json',
-                             },
-                             params={
-                                'k': API_KEY,
-                                'i': MCU_ID
-                             },
-                             json={
-                                 attribute: info
-                             })
-
-    if response.status_code != 200:
-        logging.warning(
-            "Could not update attribute '%s': (%s) %s",
-            attribute,
-            response.status_code,
-            response.content.decode('utf-8')
-            )
+    app.run(host=HOST, port=PORT)
