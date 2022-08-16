@@ -1,19 +1,15 @@
 """Module for the custom command'measure_pcb'"""
 import logging
 from mcu.models.command import Command
-from mcu.config import add_tcp_server, add_serial_server, clear_errors, report_error
+from mcu.config import add_tcp_server, clear_errors, report_error
 from mcu.protocols import Message
 
 class CustomCommand(Command):
     """Class to implement the custom command"""
     def __init__(self) -> None:
         super().__init__(keyword='measure_pcb')
-        self.__serial = add_serial_server('COM8')
-        self.__serial.register_callback(
-            error=self.serial_error,
-            )
 
-        self.__tcp = add_tcp_server('localhost', 65432)
+        self.__tcp = add_tcp_server('0.0.0.0', 65432)
         self.__tcp.register_callbacks(received=self.tcp_received,
                                       connected=self.tcp_connected,
                                       lost=self.tcp_disconnected,
@@ -27,11 +23,13 @@ class CustomCommand(Command):
         message = Message.parse(msg)
 
         if message.type == Message.TYPE.IAC:
-            self.__serial.send(message.data)
+            # self.__serial.send(message.data)
+            pass
 
     def tcp_connected(self, _: str):
         """Gets called when the TCP Server connects to a client"""
         self.__tcp_connected = True
+        logging.info("Connected")
 
     def tcp_disconnected(self):
         """Gets called when a client disconnects from the tcp server"""

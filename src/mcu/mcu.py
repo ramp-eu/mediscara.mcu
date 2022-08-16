@@ -9,8 +9,8 @@ from dotenv import load_dotenv
 from flask import Flask, make_response, request
 
 from .models.command import Command
-from .config import SERIAL_CONNECTIONS, TCP_CONNECTIONS, report_error
-from mcu import config
+from .config import SERIAL_CONNECTIONS, TCP_CONNECTIONS
+from . import config
 
 logging.getLogger("werkzeug").disabled = True  # disable flask logger
 
