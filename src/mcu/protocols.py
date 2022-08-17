@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import ClassVar
+from typing import ClassVar, List
 
 
 @dataclass
@@ -14,6 +14,7 @@ class Message:
         RUN = 'RUN'
 
         RESULT = 'RESULT'
+        STATUS = 'STATUS'
 
         OK = 'OK'
         BUSY = 'BUSY'
@@ -23,34 +24,32 @@ class Message:
     ERROR: ClassVar[str] = 'ERROR'
 
     type: TYPE = field(default=None)
-    data: str = field(default=None)
-    additional: str = field(default=None)
+    data: List[str] = field(default=None)
+
+    raw: str = field(default=None)
 
     def __str__(self):
-        if self.additional is not None:
-            return f'{self.type}|{self.additional}|{self.data}'
-
-        return f'{self.type}|{self.data}'
+        return f'{self.type.value}|{"|".join(self.data)}'
 
     @classmethod
-    def parse(cls, message: str | bytes):
+    def parse(cls, message: str | bytes | bytearray):
         """Parses the message string and converts it the a Message object"""
-        if isinstance(message, bytes):
+        if isinstance(message, (bytes, bytearray)):
             message = message.decode()
 
         instance = cls()
 
+        instance.raw = message
+
+        tokens = message.split('|')
+
+        key = tokens[0]  # the first element
+        instance.data = tokens[1:]  # all the other elements
+
         for type_ in Message.TYPE:
-            if message.startswith(type_.value):
+            if key == type_.value:
                 instance.type = type_
                 break
-
-        if not instance.is_response:
-            instance.data = message.split('|')[-1]
-
-            if instance.type == Message.TYPE.RESULT:
-                # get the SUCCESS or ERROR
-                instance.additional = message.split('|')[1]
 
         return instance
 

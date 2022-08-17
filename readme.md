@@ -34,11 +34,11 @@ In order to give more flexibility to the end user, there are predefined classes 
 
 To issue a new custom command create a new python file in the external package (src/mcu/external).
 The name can be anything, however it is advised to be the same as the command name for clarity and code readability.
-In this new command file create a class named `CustomCommand` that has the parent class `Command`. This is what the file should look like now:
+In this new command file create a class that has the parent class `Command`. This is what the file should look like now:
 ```python
 from mcu.models.command import Command
 
-class CustomCommand(Command):
+class ExampleCommand(Command):
     """Class for the custom command"""
     def __init__(self):
         super().__init__(keyword="measure_label")
@@ -128,6 +128,60 @@ command can use the same server for communication. To avoid unvanted results the
 some form of logic to elliminate errors that could occur when a command's response is received by
 another command.
 
+## Custom services
+
+The user can define services to interact with incoming data. Unlike the commands, the services do
+not have a keyword and thus, do not get called.
+Instead, use services to process incoming data. The data can be from TCP or Serial communication.
+
+### Usage
+
+To define a custom service, create a new python file in the external package (*src/mcu/external*).
+In this file, create a class that inherits from the `Service` class.
+
+Use the `__init__()` method to define the necessary communication protocols.
+
+```python
+from mcu.models.user_defined import Service
+from mcu.config import add_tcp_server
+
+class CustomService(Service):
+    def __init__(self):
+        self.__tcp = add_tcp_server('localhost', 65432)
+        self.__tcp.register_callback(received=self.tcp_received)
+
+    def tcp_received(self, message: bytes):
+        """Process the incoming message"""
+```
+
+In this example a tcp server is registered, listening at port 65432. A callback is registered to
+intercept incoming messages.
+
+> If other commands have added the same tcp server then their communication messages will call the `tcp_received` method.
+
+> NOTE: the `__init__(self)` method not take any arguments besides `self`
+
+## Skipping modules
+
+If the user defined additional command or service classes that they do not wish to include in the
+program the `SkipMixin` class can be used to mark the given class.
+This way the class will not be used.
+
+```python
+from mcu.models.user_defined import Service
+from mcu.models.mixins import SkipMixin
+from mcu.config import add_tcp_server
+
+class CustomService(Service, SkipMixin):
+    def __init__(self):
+        self.__tcp = add_tcp_server('localhost', 65432)
+        self.__tcp.register_callback(received=self.tcp_received)
+
+    def tcp_received(self, message: bytes):
+        """Process the incoming message"""
+```
+
+---
 
 ## Communication protocol
 
@@ -138,6 +192,7 @@ Messages:
 - `IAC`
 - `RUN`
 - `RESULT`
+- `STATUS`
 
 Responses:
 - `OK`
@@ -149,20 +204,30 @@ Responses:
 ### `IAC` message
 Interpret As Command. This message tells the other side to execute the data in the message.
 
-> Syntax: `IAC|<command to be executed>`
+> Syntax: `IAC|<command to be executed>\n`
 >
 > Response is **required**.
 
 ### `RUN` message
 This message is used to tell the device to execute a specific program stored in its memory.
 
-> Syntax: `RUN|<job name>`
+> Syntax: `RUN|<job name>\n`
 >
 > Response is **required**.
+
+### `STATUS` message
+This message is used to send status information about the devices.
+
+> Syntax: `STATUS|<first attribute>|<second attribute>|...\n`
+>
+> Response is **not required**
 
 ### `RESULT` message
 This message is used to inform the other side that the requested program has finished with the following result.
 
-> Syntax: `RESULT|SUCCESS or ERROR|<optional message>`
+> Syntax: `RESULT|SUCCESS or ERROR|<optional message>\n`
 >
 > Response is **not required**.
+
+---
+> All of the messages are ended with a `\n` terminator character.
