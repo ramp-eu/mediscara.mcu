@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 from flask import Flask, make_response, request
 
-from .models.command import Command
+from .models.user_defined import load
 from .config import SERIAL_CONNECTIONS, TCP_CONNECTIONS
 from . import config
 
@@ -28,7 +28,7 @@ if HOST is None or PORT is None:
 app = Flask(__name__)
 
 # Load the command class instances
-COMMANDS = Command.load_commands()
+COMMANDS, SERVICES = load()
 
 @app.route('/api', methods=["GET", "POST"])
 def api():

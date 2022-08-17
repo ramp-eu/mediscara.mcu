@@ -1,10 +1,10 @@
 """Module for the custom command'measure_pcb'"""
 import logging
-from mcu.models.command import Command
+from mcu.models.user_defined import Command
 from mcu.config import add_tcp_server, clear_errors, report_error
 from mcu.protocols import Message
 
-class CustomCommand(Command):
+class MeasurePCBCommand(Command):
     """Class to implement the custom command"""
     def __init__(self) -> None:
         super().__init__(keyword='measure_pcb')

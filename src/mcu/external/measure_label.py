@@ -1,8 +1,8 @@
 """Module for the custom command 'measure_label'"""
-from mcu.models.command import Command
+from mcu.models.user_defined import Command
 from mcu.config import add_tcp_server, clear_errors, report_error
 
-class CustomCommand(Command):
+class MeasureLabelCommand(Command):
     """Class for the custom command"""
     def __init__(self):
         super().__init__(keyword="measure_label")

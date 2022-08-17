@@ -1,13 +1,14 @@
 """Module for handling communication with the laser controller"""
 import logging
-from mcu.models.command import Command
+from mcu.models.user_defined import Command
+from mcu.models.mixins import SkipMixin
 from mcu.config import add_serial_server
 
 KEY_PWM = "pwm"
 KEY_DUTY = "duty"
 KEY_SHUTTER = "shutter"
 
-class CustomCommand(Command):
+class CustomCommand(Command, SkipMixin):
     """Custom command class to implement laser cutter control
     """
     def __init__(self) -> None:

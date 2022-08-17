@@ -3,7 +3,7 @@ import logging
 from typing import List
 
 from mcu.connectors.serial_connection import SerialServer
-from mcu.models.command import Command
+from mcu.models.user_defined import Service
 from .connectors.tcp_connection import TCPCLient, TCPServer
 
 TCP_CONNECTIONS: List[TCPServer|TCPCLient] = []
@@ -36,8 +36,8 @@ def add_serial_server(port: str = None, baudrate: int = 9600) -> SerialServer:
 def report_error(error_msg: str):
     """This method can be used to report errors to the runtime"""
     logging.info('Got error: %s', error_msg)
-    Command.update_attribute(attribute="e", info=error_msg)
+    Service.update_attribute(attribute="e", info=error_msg)
 
 def clear_errors():
     """This method can be used to clear previously set errors"""
-    Command.update_attribute(attribute="e", info="")
+    Service.update_attribute(attribute="e", info="")
