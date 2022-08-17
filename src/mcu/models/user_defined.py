@@ -26,48 +26,9 @@ IOTA_PATH = os.getenv('IOTA_PATH')
 
 class Service(ABC):
     """Base class for defining services"""
-    def __init__(self) -> None:
-        self.__thread = None
-        self.result = None
-
-    def execute(self, payload):
-        """Executes the service in a separate background thread"""
-        self.result = None
-        self.__thread = Thread(target=self._target_inner, args=[payload], daemon=True)
-        self.__thread.start()
-
-    @abstractmethod
-    def target(self, payload):
-        """The child class must override this method"""
-        raise NotImplementedError()
-
-    def _target_inner(self, payload):
-        try:
-            self.target(payload)
-
-        except Exception as error: # pylint: disable=broad-except
-            logging.info("An exception occurred while executing service: %s", str(error))
-
-        self._on_finished()
-
-    def _on_finished(self):
-        if self.result is None:
-            logging.warning(
-                "The class should set the _result attribute before the end of the '%s' method",
-                self.target.__name__
-            )
-            return
-
-    @property
-    def running(self):
-        """Returns wether or not the command is currently running"""
-        if self.__thread is None:
-            return False
-
-        return self.__thread.is_alive()
 
     @staticmethod
-    def update_attribute(attribute: str, info: str):
+    def update_attribute(attribute: str, info: str | int | float | bool):
         """Send a post request updating the given attribute"""
         try:
             response = requests.post(f'{IOTA_URL}/{IOTA_PATH}',
@@ -94,13 +55,54 @@ class Service(ABC):
         except requests.ConnectionError:
             logging.warning("Unable to reach server")
 
+    @staticmethod
+    def update_attributes(attributes: dict):
+        """Updates attributes
+
+        Args:
+            attributes (dict): the attributes in a key-value format
+        """
+
+        for attribute, info in attributes.items():
+
+            if not isinstance(attribute, str):
+                logging.warning(
+                    "Attribute name should be string, instead it is %s",
+                    type(attribute)
+                )
+                continue
+
+            if not isinstance(info, str | int | float | bool):
+                logging.warning(
+                    "Attribute value should be one of the following: str, float, int, bool, instead: %s",
+                    type(info)
+                )
+                continue
+
+            Command.update_attribute(attribute, info)
+
 
 class Command(Service):
     """Base class for defining commands that conform to the IoT Agent JSON's scheme
     """
     def __init__(self, keyword: str) -> None:
         super().__init__()
+        self.__thread = None
         self.__keyword = keyword
+
+        self.result = None
+
+
+    def execute(self, payload):
+        """Executes the service in a separate background thread"""
+        self.result = None
+        self.__thread = Thread(target=self._target_inner, args=[payload], daemon=True)
+        self.__thread.start()
+
+    @abstractmethod
+    def target(self, payload):
+        """The child class must override this method"""
+        raise NotImplementedError()
 
     def _target_inner(self, payload):
         try:
@@ -110,6 +112,22 @@ class Command(Service):
             logging.info("An exception occurred while executing command: %s", str(error))
 
         self._on_finished()
+
+    def _on_finished(self):
+        if self.result is None:
+            logging.warning(
+                "The class should set the _result attribute before the end of the '%s' method",
+                self.target.__name__
+            )
+            return
+
+    @property
+    def running(self):
+        """Returns wether or not the command is currently running"""
+        if self.__thread is None:
+            return False
+
+        return self.__thread.is_alive()
 
     @abstractmethod
     def target(self, *args):
@@ -177,7 +195,8 @@ def load() -> List[Command]:
                                 continue
 
                         # if the __init__ method requires arguments, a TypeError is raised
-                        except TypeError:
+                        except TypeError as err:
+                            logging.warning(err.args)
                             logging.warning(
                                 "'%s' should not have arguments.",
                                 attr.__name__

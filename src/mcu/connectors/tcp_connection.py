@@ -26,8 +26,7 @@ class TCPServerProtocol(asyncio.Protocol):
     def connection_lost(self, exc: Exception | None) -> None:
         if exc is not None:
             print(f"Connection closed with exception: {exc}")
-        else:
-            print("Connection closed")
+
         self.transport.close()
         _ = [callback() for callback in self.__connection_lost_callbacks]
 
