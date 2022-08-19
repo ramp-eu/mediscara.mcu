@@ -43,7 +43,9 @@ class Service(ABC):
                                     },
                                     json={
                                         attribute: info
-                                    })
+                                    },
+                                    timeout=1
+                                    )
 
             if response.status_code != 200:
                 logging.warning(
@@ -140,8 +142,6 @@ class Command(Service):
         """
 
     def _on_finished(self):
-        super()._on_finished()
-
         self.update_attribute(
             attribute=f'{self.__keyword}_info',
             info=self.result,

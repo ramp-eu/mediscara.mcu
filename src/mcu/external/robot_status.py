@@ -17,11 +17,16 @@ class RobotStatusService(Service):
         self.__tcp = add_tcp_server('0.0.0.0', 65432)
         self.__tcp.register_callbacks(received=self.__tcp_received)
 
+        self._rp = False
+        self._rr = False
+        self._rw = False
+        self._re = False
+
         initial_attributes = {
-            self.ROBOT_POWER: False,
-            self.ROBOT_RUNNING: False,
-            self.ROBOT_WAITING: False,
-            self.ROBOT_ERROR: False,
+            self.ROBOT_POWER: self._rp,
+            self.ROBOT_RUNNING: self._rr,
+            self.ROBOT_WAITING: self._rw,
+            self.ROBOT_ERROR: self._re,
         }
 
         Command.update_attributes(initial_attributes)
@@ -36,19 +41,31 @@ class RobotStatusService(Service):
         #          POWER   RUNNING   WAITING   ERROR
 
         if msg.type == Message.TYPE.STATUS:
-            logging.info(msg)
-            try:
-                attributes = {
-                    self.ROBOT_POWER: msg.data[0] == "TRUE",
-                    self.ROBOT_RUNNING: msg.data[1] == "TRUE",
-                    self.ROBOT_WAITING: msg.data[2] == "TRUE",
-                    self.ROBOT_ERROR: msg.data[3] == "TRUE"
-                }
 
-                logging.info("Updating attributes to: %s", attributes)
+            rp = msg.data[0] == "TRUE"
+            rr = msg.data[1] == "TRUE"
+            rw = msg.data[2] == "TRUE"
+            re = msg.data[3] == "TRUE"
 
-            except IndexError:
-                logging.warning("Invalid status message: %s", msg)
-                return
+            if rp != self._rp or rr != self._rr or rw != self._rw or re != self._re:
 
-            Command.update_attributes(attributes)
+                self._rp = rp
+                self._rr = rr
+                self._rw = rw
+                self._re = re
+
+                try:
+                    attributes = {
+                        self.ROBOT_POWER: self._rp,
+                        self.ROBOT_RUNNING: self._rr,
+                        self.ROBOT_WAITING: self._rw,
+                        self.ROBOT_ERROR: self._re,
+                    }
+
+                    logging.info("Updating attributes to: %s", attributes)
+
+                except IndexError:
+                    logging.warning("Invalid status message: %s", msg)
+                    return
+
+                Command.update_attributes(attributes)

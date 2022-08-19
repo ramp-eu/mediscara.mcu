@@ -1,8 +1,9 @@
 """Module for the communication protocol between the IoT Device and the MCU"""
 
 from dataclasses import dataclass, field
-from enum import Enum
-from typing import ClassVar, List
+from enum import Enum, auto
+import logging
+from typing import ClassVar, Dict, List
 
 
 @dataclass
@@ -13,7 +14,7 @@ class Message:
         IAC = 'IAC'
         RUN = 'RUN'
 
-        RESULT = 'RESULT'
+        KEY_VALUE = auto()
         STATUS = 'STATUS'
 
         OK = 'OK'
@@ -25,6 +26,8 @@ class Message:
 
     type: TYPE = field(default=None)
     data: List[str] = field(default=None)
+
+    data_kw: Dict[str, str] = field(default=None)
 
     raw: str = field(default=None)
 
@@ -47,9 +50,26 @@ class Message:
         instance.data = tokens[1:]  # all the other elements
 
         for type_ in Message.TYPE:
+            if type_ == Message.TYPE.KEY_VALUE:
+                continue
+
             if key == type_.value:
                 instance.type = type_
                 break
+
+        else: # no break == no match
+            instance.type = Message.TYPE.KEY_VALUE
+            instance.data_kw = {}
+            # process key-value data
+            for index, element in enumerate(tokens):
+                if index % 2 == 0:
+                    # even index 0, 2, ...
+                    try:
+                        instance.data_kw[element] = tokens[index + 1]
+
+                    except IndexError:
+                        pass
+
 
         return instance
 

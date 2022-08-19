@@ -69,7 +69,8 @@ class TCPServerProtocol(asyncio.Protocol):
         if isinstance(msg, str):
             msg = msg.encode('ascii')
 
-        self.transport.write(msg)
+        if self.transport is not None:
+            self.transport.write(msg)
 
 class TCPServer:
     """Class to run a TCP Server Protocol in a separate thread"""

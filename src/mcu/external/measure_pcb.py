@@ -1,6 +1,6 @@
 """Module for the custom command'measure_pcb'"""
 import logging
-from mcu.models.user_defined import Command
+from mcu.models.user_defined import Command, Service
 from mcu.config import add_tcp_server, clear_errors, report_error
 from mcu.protocols import Message
 
@@ -16,15 +16,16 @@ class MeasurePCBCommand(Command):
                                       )
 
         self.__tcp_connected = False
+        self.__measuring = False
 
 
     def tcp_received(self, msg: bytes):
         """Gets called when TCP Server receives data"""
         message = Message.parse(msg)
 
-        if message.type == Message.TYPE.IAC:
-            # self.__serial.send(message.data)
-            pass
+        if message.type == Message.TYPE.KEY_VALUE and self.__measuring:
+            logging.info("Measurement results: %s", str(message.data_kw))
+            Service.update_attribute(f'{self.keyword}_info', str(message.data_kw))
 
     def tcp_connected(self, _: str):
         """Gets called when the TCP Server connects to a client"""
@@ -54,10 +55,11 @@ class MeasurePCBCommand(Command):
 
                     if pg_name is not None:
                         logging.info("Sending program name %s to robot..", pg_name)
-                        self.__tcp.send(f'RUN|{pg_name}|\n')
+                        self.__tcp.send(f'RUN|{pg_name}\n')
 
             # send the command itself
-            self.__tcp.send("IAC|MEASURE_PCB|\n")
+            self.__tcp.send("IAC|MEASURE_PCB\n")
+            self.__measuring = True
 
         except Exception as error: # pylint: disable=broad-except
             logging.info("Unable to execute command: %s", str(error))
