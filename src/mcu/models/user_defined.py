@@ -7,7 +7,7 @@ import logging
 import os
 import pkgutil
 from threading import Thread
-from typing import List
+from typing import List, Tuple
 
 import requests
 
@@ -16,12 +16,12 @@ from .mixins import SkipMixin
 
 
 # get environment variables
-API_KEY = os.getenv('API_KEY')
-FIWARE_SERVICE = os.getenv('FIWARE_SERVICE')
+API_KEY = os.getenv("API_KEY")
+FIWARE_SERVICE = os.getenv("FIWARE_SERVICE")
 FIWARE_SERVICEPATH = os.getenv("FIWARE_SERVICEPATH")
-MCU_ID = os.getenv('MCU_ID')
-IOTA_URL = os.getenv('IOTA_URL')
-IOTA_PATH = os.getenv('IOTA_PATH')
+MCU_ID = os.getenv("MCU_ID")
+IOTA_URL = os.getenv("IOTA_URL")
+IOTA_PATH = os.getenv("IOTA_PATH")
 
 
 class Service(ABC):
@@ -31,29 +31,25 @@ class Service(ABC):
     def update_attribute(attribute: str, info: str | int | float | bool):
         """Send a post request updating the given attribute"""
         try:
-            response = requests.post(f'{IOTA_URL}/{IOTA_PATH}',
-                                    headers={
-                                        'fiware-service': FIWARE_SERVICE,
-                                        'fiware-servicepath': FIWARE_SERVICEPATH,
-                                        'Content-Type': 'application/json',
-                                    },
-                                    params={
-                                        'k': API_KEY,
-                                        'i': MCU_ID
-                                    },
-                                    json={
-                                        attribute: info
-                                    },
-                                    timeout=1
-                                    )
+            response = requests.post(
+                f"{IOTA_URL}/{IOTA_PATH}",
+                headers={
+                    "fiware-service": FIWARE_SERVICE,
+                    "fiware-servicepath": FIWARE_SERVICEPATH,
+                    "Content-Type": "application/json",
+                },
+                params={"k": API_KEY, "i": MCU_ID},
+                json={attribute: info},
+                timeout=1,
+            )
 
             if response.status_code != 200:
                 logging.warning(
                     "Could not update attribute '%s': (%s) %s",
                     attribute,
                     response.status_code,
-                    response.content.decode('utf-8')
-                    )
+                    response.content.decode("utf-8"),
+                )
         except requests.ConnectionError:
             logging.warning("Unable to reach server")
 
@@ -69,15 +65,14 @@ class Service(ABC):
 
             if not isinstance(attribute, str):
                 logging.warning(
-                    "Attribute name should be string, instead it is %s",
-                    type(attribute)
+                    "Attribute name should be string, instead it is %s", type(attribute)
                 )
                 continue
 
             if not isinstance(info, str | int | float | bool):
                 logging.warning(
                     "Attribute value should be one of the following: str, float, int, bool, instead: %s",
-                    type(info)
+                    type(info),
                 )
                 continue
 
@@ -85,8 +80,8 @@ class Service(ABC):
 
 
 class Command(Service):
-    """Base class for defining commands that conform to the IoT Agent JSON's scheme
-    """
+    """Base class for defining commands that conform to the IoT Agent JSON's scheme"""
+
     def __init__(self, keyword: str) -> None:
         super().__init__()
         self.__thread = None
@@ -94,24 +89,20 @@ class Command(Service):
 
         self.result = None
 
-
     def execute(self, payload):
         """Executes the service in a separate background thread"""
         self.result = None
         self.__thread = Thread(target=self._target_inner, args=[payload], daemon=True)
         self.__thread.start()
 
-    @abstractmethod
-    def target(self, payload):
-        """The child class must override this method"""
-        raise NotImplementedError()
-
     def _target_inner(self, payload):
         try:
             self.target(payload)
 
-        except Exception as error: # pylint: disable=broad-except
-            logging.info("An exception occurred while executing command: %s", str(error))
+        except Exception as error:  # pylint: disable=broad-except
+            logging.info(
+                "An exception occurred while executing command: %s", str(error)
+            )
 
         self._on_finished()
 
@@ -119,9 +110,14 @@ class Command(Service):
         if self.result is None:
             logging.warning(
                 "The class should set the _result attribute before the end of the '%s' method",
-                self.target.__name__
+                self.target.__name__,
             )
             return
+
+        self.update_attribute(
+            attribute=f"{self.__keyword}_info",
+            info=self.result,
+        )
 
     @property
     def running(self):
@@ -141,21 +137,14 @@ class Command(Service):
         before the method finishes execution
         """
 
-    def _on_finished(self):
-        self.update_attribute(
-            attribute=f'{self.__keyword}_info',
-            info=self.result,
-            )
-
     @property
     def keyword(self):
         """Returns the keyword of this command"""
         return self.__keyword
 
 
-def load() -> List[Command]:
-    """Loads command and service classes from the 'external' directory
-    """
+def load() -> Tuple[List[Command], List[Service]]:
+    """Loads command and service classes from the 'external' directory"""
     # get the path of the external package
     pkg_path = os.path.dirname(external.__file__)
     # get a list of modules in the package
@@ -198,8 +187,7 @@ def load() -> List[Command]:
                         except TypeError as err:
                             logging.warning(err.args)
                             logging.warning(
-                                "'%s' should not have arguments.",
-                                attr.__name__
+                                "'%s' should not have arguments.", attr.__name__
                             )
 
     return external_command_instances, external_service_instances

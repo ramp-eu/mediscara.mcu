@@ -1,19 +1,19 @@
 """Module for handling communication with the laser controller"""
 import logging
 from mcu.models.user_defined import Command
-from mcu.models.mixins import SkipMixin
 from mcu.config import add_serial_server
 
 KEY_PWM = "pwm"
 KEY_DUTY = "duty"
 KEY_SHUTTER = "shutter"
 
-class CustomCommand(Command, SkipMixin):
-    """Custom command class to implement laser cutter control
-    """
+
+class StartLaserCut(Command):
+    """Custom command class to implement laser cutter control"""
+
     def __init__(self) -> None:
-        super().__init__(keyword="laser_control")
-        self.__serial = add_serial_server('COM10')
+        super().__init__(keyword="start_laser_cut")
+        self.__serial = add_serial_server("COM10")
         self.__serial.register_callback(self.serial_received)
 
     def serial_received(self, msg: str):
@@ -28,10 +28,10 @@ class CustomCommand(Command, SkipMixin):
                 keys = arg.keys()
                 if KEY_PWM in keys:
                     if arg[KEY_PWM]:
-                        self.__serial.send('pwm|on|\n')  # turn on the pwm
+                        self.__serial.send("pwm|on|\n")  # turn on the pwm
 
                     else:
-                        self.__serial.send('pwm|off|\n')  # turn off the pwm
+                        self.__serial.send("pwm|off|\n")  # turn off the pwm
 
                     match = True
 
@@ -39,27 +39,27 @@ class CustomCommand(Command, SkipMixin):
                     duty = arg[KEY_DUTY]
 
                     if not isinstance(duty, (int, float)):
-                        self._command_result = "Invalid command"
+                        self.result = "Invalid command"
 
                     else:
-                        self.__serial.send(f'duty|{arg[KEY_DUTY]}|\n') # set the power
+                        self.__serial.send(f"duty|{arg[KEY_DUTY]}|\n")  # set the power
 
                     match = True
 
                 if KEY_SHUTTER in keys:
                     if arg[KEY_SHUTTER]:
-                        self.__serial.send('shutter|on|\n')  # turn on the shutter
+                        self.__serial.send("shutter|on|\n")  # turn on the shutter
 
                     else:
-                        self.__serial.send('shutter|off|\n')  # turn off the shutter
+                        self.__serial.send("shutter|off|\n")  # turn off the shutter
 
                     match = True
 
                 if not match:
-                    self._command_result = 'Invalid command'
+                    self.result = "Invalid command"
                     return
 
-                self._command_result = "OK"
+                self.result = "OK"
                 return
 
-        self._command_result = "Invalid command"
+        self.result = "Invalid command"
