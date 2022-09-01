@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 
 from flask import Flask, make_response, request
 
+
 from .models.user_defined import load
 from .config import SERIAL_CONNECTIONS, TCP_CONNECTIONS
 from . import config
@@ -17,8 +18,8 @@ logging.getLogger("werkzeug").disabled = True  # disable flask logger
 # load the environment variables from .env
 load_dotenv()
 
-HOST = os.getenv('HOST')
-PORT = os.getenv('PORT')
+HOST = os.getenv("HOST")
+PORT = os.getenv("PORT")
 
 if HOST is None or PORT is None:
     logging.fatal("Please set the HOST and PORT environment variables")
@@ -30,7 +31,8 @@ app = Flask(__name__)
 # Load the command class instances
 COMMANDS, SERVICES = load()
 
-@app.route('/api', methods=["GET", "POST"])
+
+@app.route("/api", methods=["GET", "POST"])
 def api():
     """Main entry point for the MCU api requests"""
 
@@ -40,20 +42,20 @@ def api():
     logging.info("Incoming %s: %s", request.method, data_json)
 
     if request.method == "GET":
-        return make_response(json.dumps({'': 'BAD REQUEST'}), 400)
+        return make_response(json.dumps({"": "BAD REQUEST"}), 400)
 
     if request.method == "POST":
         for command in COMMANDS:
             if command.keyword in keys:
                 if command.running:
-                    return make_response(json.dumps({command.keyword: 'BUSY'}), 503)
+                    return make_response(json.dumps({command.keyword: "BUSY"}), 503)
 
                 args = data_json[command.keyword]  # get the value for the key
 
                 command.execute(args)
-                return make_response(json.dumps({command.keyword: 'RECEIVED'}), 200)
+                return make_response(json.dumps({command.keyword: "RECEIVED"}), 200)
 
-    return make_response(json.dumps({'': 'BAD_COMMAND'}), 400)
+    return make_response(json.dumps({"": "BAD_COMMAND"}), 400)
 
 
 def main():
