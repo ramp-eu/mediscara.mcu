@@ -114,10 +114,11 @@ class Command(Service):
             )
             return
 
-        self.update_attribute(
-            attribute=f"{self.__keyword}_info",
-            info=self.result,
-        )
+        if self.result != "":  # skip the update if the result string is empty
+            self.update_attribute(
+                attribute=f"{self.__keyword}_info",
+                info=self.result,
+            )
 
     @property
     def running(self):
