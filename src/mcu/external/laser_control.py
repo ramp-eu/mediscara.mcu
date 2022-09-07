@@ -38,6 +38,11 @@ class LaserControl(Command):
                 logging.info("Stopping laser")
                 self.__serial.send("pwm|off|\n")
 
+        elif message.is_response:
+            logging.info("Robot job: %s", message.type)
+
+            self.update_attribute(f"{self.keyword}_info", message.type.value)
+
     def serial_received(self, msg: str):
         """Gets called when serial communication is received"""
         logging.info("Arduino msg: %s", msg)

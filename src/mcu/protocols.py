@@ -2,27 +2,28 @@
 
 from dataclasses import dataclass, field
 from enum import Enum, auto
-import logging
 from typing import ClassVar, Dict, List
 
 
 @dataclass
 class Message:
     """A representation of the messages in the protocol"""
+
     class TYPE(Enum):
         """Message types"""
-        IAC = 'IAC'
-        RUN = 'RUN'
+
+        IAC = "IAC"
+        RUN = "RUN"
 
         KEY_VALUE = auto()
-        STATUS = 'STATUS'
+        STATUS = "STATUS"
 
-        OK = 'OK'
-        BUSY = 'BUSY'
-        ERROR = 'ERROR'
+        OK = "OK"
+        BUSY = "BUSY"
+        ERROR = "ERROR"
 
-    SUCCESS: ClassVar[str] = 'SUCCESS'
-    ERROR: ClassVar[str] = 'ERROR'
+    SUCCESS: ClassVar[str] = "SUCCESS"
+    ERROR: ClassVar[str] = "ERROR"
 
     type: TYPE = field(default=None)
     data: List[str] = field(default=None)
@@ -44,10 +45,11 @@ class Message:
 
         instance.raw = message
 
-        tokens = message.split('|')
+        tokens = message.split("|")
 
         key = tokens[0]  # the first element
-        instance.data = tokens[1:]  # all the other elements
+        if len(tokens > 1):
+            instance.data = tokens[1:]  # all the other elements
 
         for type_ in Message.TYPE:
             if type_ == Message.TYPE.KEY_VALUE:
@@ -57,7 +59,7 @@ class Message:
                 instance.type = type_
                 break
 
-        else: # no break == no match
+        else:  # no break == no match
             instance.type = Message.TYPE.KEY_VALUE
             instance.data_kw = {}
             # process key-value data
@@ -69,7 +71,6 @@ class Message:
 
                     except IndexError:
                         pass
-
 
         return instance
 
