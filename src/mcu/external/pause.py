@@ -8,7 +8,7 @@ class Pause(Command):
     """Custom command class for the pause command"""
 
     def __init__(self) -> None:
-        super().__init__(keyword="pause")
+        super().__init__(keywords="pause")
         self.__tcp = add_tcp_server(host="0.0.0.0", port=65432)
 
         self.__tcp.register_callbacks(received=self.tcp_received)

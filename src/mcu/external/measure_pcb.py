@@ -9,7 +9,7 @@ class MeasurePCBCommand(Command):
     """Class to implement the custom command"""
 
     def __init__(self) -> None:
-        super().__init__(keyword="measure_pcb")
+        super().__init__(keywords="measure_pcb")
 
         self.__tcp = add_tcp_server("0.0.0.0", 65432)
         self.__tcp.register_callbacks(
@@ -27,7 +27,7 @@ class MeasurePCBCommand(Command):
 
         if message.type == Message.TYPE.KEY_VALUE and self.__measuring:
             logging.info("Measurement results: %s", str(message.data_kw))
-            Service.update_attribute(f"{self.keyword}_info", str(message.data_kw))
+            Service.update_attribute(f"{self.keywords}_info", str(message.data_kw))
 
     def tcp_connected(self, _: str):
         """Gets called when the TCP Server connects to a client"""

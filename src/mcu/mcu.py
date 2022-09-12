@@ -4,12 +4,13 @@ import json
 import logging
 import os
 import sys
+from typing import List
 from dotenv import load_dotenv
 
 from flask import Flask, make_response, request
 
 
-from .models.user_defined import load
+from .models.user_defined import Service, load
 from .config import SERIAL_CONNECTIONS, TCP_CONNECTIONS
 from . import config
 
@@ -37,7 +38,15 @@ def api():
     """Main entry point for the MCU api requests"""
 
     data_json = json.loads(request.data)
-    keys = data_json.keys()
+    keys = data_json.keys()  # type: List[str]
+
+    if len(keys) != 1:
+        error_msg = "Multiple commands got called"
+        logging.error(error_msg)
+        Service.update_attribute("error", info=error_msg)
+        return make_response(json.dumps({"": "BAD REQUEST"}), 400)
+
+    key = keys[0]
 
     logging.info("Incoming %s: %s", request.method, data_json)
 
@@ -46,14 +55,26 @@ def api():
 
     if request.method == "POST":
         for command in COMMANDS:
-            if command.keyword in keys:
+            matched = False
+
+            if isinstance(command.keywords, str):
+                if command.keywords == key:
+                    matched = True
+
+            # check if any of the command keywords are in the keys
+            elif any(key in command.keywords for key in keys):
+                matched = True
+
+            # if a match is found run the command
+            if matched:
+
                 if command.running:
-                    return make_response(json.dumps({command.keyword: "BUSY"}), 503)
+                    return make_response(json.dumps({command.keywords: "BUSY"}), 503)
 
-                args = data_json[command.keyword]  # get the value for the key
+                args = data_json[key]  # get the value for the key
 
-                command.execute(args)
-                return make_response(json.dumps({command.keyword: "RECEIVED"}), 200)
+                command.execute(args, keywords=key)
+                return make_response(json.dumps({command.keywords: "RECEIVED"}), 200)
 
     return make_response(json.dumps({"": "BAD_COMMAND"}), 400)
 

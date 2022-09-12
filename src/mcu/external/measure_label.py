@@ -7,7 +7,7 @@ class MeasureLabelCommand(Command):
     """Class for the custom command"""
 
     def __init__(self):
-        super().__init__(keyword="measure_label")
+        super().__init__(keywords="measure_label")
         self.__server = add_tcp_server(host="0.0.0.0", port=65432)
         self.__server.register_callbacks(
             connected=self.__tcp_connected,

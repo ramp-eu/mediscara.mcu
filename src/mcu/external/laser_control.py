@@ -13,7 +13,7 @@ class LaserControl(Command):
     """Custom command class to implement laser cutter control"""
 
     def __init__(self) -> None:
-        super().__init__(keyword="start_laser_cut")
+        super().__init__(keywords="start_laser_cut")
         self.__serial = add_serial_server("/dev/ttyUSB0")
         self.__serial.register_callback(self.serial_received)
 
@@ -41,7 +41,7 @@ class LaserControl(Command):
         elif message.is_response:
             logging.info("Robot job: %s", message.type)
 
-            self.update_attribute(f"{self.keyword}_info", message.type.value)
+            self.update_attribute(f"{self.keywords}_info", message.type.value)
 
     def serial_received(self, msg: str):
         """Gets called when serial communication is received"""

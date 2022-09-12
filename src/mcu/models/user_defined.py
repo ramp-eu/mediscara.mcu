@@ -82,22 +82,30 @@ class Service(ABC):
 class Command(Service):
     """Base class for defining commands that conform to the IoT Agent JSON's scheme"""
 
-    def __init__(self, keyword: str) -> None:
+    def __init__(self, keywords: str | List[str]) -> None:
         super().__init__()
         self.__thread = None
-        self.__keyword = keyword
+        self.__keywords = keywords
 
         self.result = None
+        self.current_keyword = ""
 
-    def execute(self, payload):
+    def execute(self, payload, keyword: str = ""):
         """Executes the service in a separate background thread"""
+        # set the keyword variable to let the class know which keyword is being called
+        self.current_keyword = keyword
         self.result = None
-        self.__thread = Thread(target=self._target_inner, args=[payload], daemon=True)
+        self.__thread = Thread(
+            target=self._target_inner,
+            args=[payload],
+            kwargs={"keyword": keyword},
+            daemon=True,
+        )
         self.__thread.start()
 
-    def _target_inner(self, payload):
+    def _target_inner(self, payload, keyword: str):
         try:
-            self.target(payload)
+            self.target(payload, keyword=keyword)
 
         except Exception as error:  # pylint: disable=broad-except
             logging.info(
@@ -116,7 +124,7 @@ class Command(Service):
 
         if self.result != "":  # skip the update if the result string is empty
             self.update_attribute(
-                attribute=f"{self.__keyword}_info",
+                attribute=f"{self.__keywords}_info",
                 info=self.result,
             )
 
@@ -129,7 +137,7 @@ class Command(Service):
         return self.__thread.is_alive()
 
     @abstractmethod
-    def target(self, *args):
+    def target(self, *args, keyword: str):
         """The target function of the thread running the command
 
         The child class must override this method
@@ -139,9 +147,9 @@ class Command(Service):
         """
 
     @property
-    def keyword(self):
+    def keywords(self) -> str | List[str]:
         """Returns the keyword of this command"""
-        return self.__keyword
+        return self.__keywords
 
 
 def load() -> Tuple[List[Command], List[Service]]:

@@ -6,7 +6,7 @@ from mcu.config import add_tcp_server
 
 class HomeCommand(Command):
     def __init__(self) -> None:
-        super().__init__(keyword="home")
+        super().__init__(keywords="home")
 
         self.__tcp = add_tcp_server("0.0.0.0", 65432)
 
