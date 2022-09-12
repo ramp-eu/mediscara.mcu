@@ -5,22 +5,22 @@ import logging
 import os
 import sys
 from typing import List
-from dotenv import load_dotenv
+from dotenv import dotenv_values
 
 from flask import Flask, make_response, request
 
 
 from .models.user_defined import Service, load
-from .config import SERIAL_CONNECTIONS, TCP_CONNECTIONS
-from . import config
+from .config import SERIAL_CONNECTIONS, TCP_CONNECTIONS, clear_errors
 
 logging.getLogger("werkzeug").disabled = True  # disable flask logger
 
 # load the environment variables from .env
-load_dotenv()
+config = dotenv_values()
 
-HOST = os.getenv("HOST")
-PORT = os.getenv("PORT")
+HOST = config["HOST"]
+PORT = config["PORT"]
+
 
 if HOST is None or PORT is None:
     logging.fatal("Please set the HOST and PORT environment variables")
@@ -46,7 +46,7 @@ def api():
         Service.update_attribute("error", info=error_msg)
         return make_response(json.dumps({"": "BAD REQUEST"}), 400)
 
-    key = keys[0]
+    key = list(keys)[0]
 
     logging.info("Incoming %s: %s", request.method, data_json)
 
@@ -69,12 +69,12 @@ def api():
             if matched:
 
                 if command.running:
-                    return make_response(json.dumps({command.keywords: "BUSY"}), 503)
+                    return make_response(json.dumps({key: "BUSY"}), 503)
 
                 args = data_json[key]  # get the value for the key
 
-                command.execute(args, keywords=key)
-                return make_response(json.dumps({command.keywords: "RECEIVED"}), 200)
+                command.execute(args, keyword=key)
+                return make_response(json.dumps({key: "RECEIVED"}), 200)
 
     return make_response(json.dumps({"": "BAD_COMMAND"}), 400)
 
@@ -89,6 +89,6 @@ def main():
     for value in SERIAL_CONNECTIONS:
         value.start()
 
-    config.clear_errors()  # clear the errors
+    clear_errors()  # clear the errors
 
     app.run(host=HOST, port=PORT)

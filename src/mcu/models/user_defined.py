@@ -10,18 +10,21 @@ from threading import Thread
 from typing import List, Tuple
 
 import requests
+from dotenv import dotenv_values
 
 from mcu import external
 from .mixins import SkipMixin
 
 
 # get environment variables
-API_KEY = os.getenv("API_KEY")
-FIWARE_SERVICE = os.getenv("FIWARE_SERVICE")
-FIWARE_SERVICEPATH = os.getenv("FIWARE_SERVICEPATH")
-MCU_ID = os.getenv("MCU_ID")
-IOTA_URL = os.getenv("IOTA_URL")
-IOTA_PATH = os.getenv("IOTA_PATH")
+config = dotenv_values()
+
+API_KEY = config["API_KEY"]
+FIWARE_SERVICE = config["FIWARE_SERVICE"]
+FIWARE_SERVICEPATH = config["FIWARE_SERVICEPATH"]
+MCU_ID = config["MCU_ID"]
+IOTA_URL = config["IOTA_URL"]
+IOTA_PATH = config["IOTA_PATH"]
 
 
 class Service(ABC):
@@ -117,7 +120,7 @@ class Command(Service):
     def _on_finished(self):
         if self.result is None:
             logging.warning(
-                "The class should set the _result attribute before the end of the '%s' method",
+                "The class should set the result attribute before the end of the '%s' method",
                 self.target.__name__,
             )
             return
