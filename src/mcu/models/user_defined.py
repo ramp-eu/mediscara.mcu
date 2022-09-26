@@ -120,7 +120,8 @@ class Command(Service):
     def _on_finished(self):
         if self.result is None:
             logging.warning(
-                "The class should set the result attribute before the end of the '%s' method",
+                "The '%s' class should set the result attribute before the end of the '%s' method",
+                self.__class__.__name__,
                 self.target.__name__,
             )
             return

@@ -47,6 +47,6 @@ class LaserControl(Command):
         """Gets called when serial communication is received"""
         logging.info("Arduino msg: %s", msg)
 
-    def target(self, *_):
+    def target(self, *_, keyword: str):
         self.__tcp.send("RUN|prog1\n")
         self.result = ""

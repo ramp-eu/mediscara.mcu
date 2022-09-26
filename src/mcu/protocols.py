@@ -48,7 +48,7 @@ class Message:
         tokens = message.split("|")
 
         key = tokens[0]  # the first element
-        if len(tokens > 1):
+        if len(tokens) > 1:
             instance.data = tokens[1:]  # all the other elements
 
         for type_ in Message.TYPE:

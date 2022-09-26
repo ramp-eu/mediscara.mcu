@@ -10,7 +10,7 @@ class HomeCommand(Command):
 
         self.__tcp = add_tcp_server("0.0.0.0", 65432)
 
-    def target(self, *_):
+    def target(self, *_, keyword: str):
         logging.info("Homing robot")
         self.__tcp.send("IAC|HOME\n")
 

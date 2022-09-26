@@ -125,6 +125,12 @@ class TCPServer:
         Args:
             msg (str): The string message to be sent
         """
+        # append the ending char if necessary
+        if isinstance(msg, bytes) and not msg.endswith(b'\n'):
+            msg += b'\n'
+        elif isinstance(msg, str) and not msg.endswith('\n'):
+            msg += '\n'
+
         self.__protocol.send(msg)
 
     def register_callbacks(
