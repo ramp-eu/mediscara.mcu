@@ -18,7 +18,7 @@ class Pause(Command):
     def tcp_received(self, msg: bytes):
         """Gets called when a new tcpip message is received"""
 
-    def target(self, *_):
+    def target(self, *_, keyword: str):
         self.__tcp.send("IAC|PAUSE\n")  # send the pause signal
 
         self.__paused = not self.__paused
