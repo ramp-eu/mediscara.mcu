@@ -15,7 +15,7 @@ class Message:
         IAC = "IAC"
         RUN = "RUN"
 
-        KEY_VALUE = auto()
+        KEY_VALUE = "KEY_VALUE"
         STATUS = "STATUS"
 
         OK = "OK"
@@ -52,9 +52,6 @@ class Message:
             instance.data = tokens[1:]  # all the other elements
 
         for type_ in Message.TYPE:
-            if type_ == Message.TYPE.KEY_VALUE:
-                continue
-
             if key == type_.value:
                 instance.type = type_
                 break

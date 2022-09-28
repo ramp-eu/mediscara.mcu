@@ -37,7 +37,8 @@ class TCPServerProtocol(asyncio.Protocol):
 
         messages = data.split(b"\n")  # split if there are multiple messages
         for message in messages:
-            _ = [callback(message) for callback in self.__received_callbacks]
+            if message != b'':
+                _ = [callback(message) for callback in self.__received_callbacks]
 
     def register_callback(
         self,

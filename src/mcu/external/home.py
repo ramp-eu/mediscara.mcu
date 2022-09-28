@@ -14,11 +14,17 @@ class HomeCommand(Command):
 
     def tcp_received(self, msg: bytes):
         message = Message.parse(msg)
-        if message.type == Message.TYPE.OK:
-            self.update_attribute(f"{self.current_keyword}_info", "OK")
 
-        if message.type == Message.TYPE.ERROR:
-            self.update_attribute(f"{self.current_keyword}_info", "ERROR")
+        if message.type == Message.TYPE.KEY_VALUE:
+            homing_result = message.data_kw["HOMING"]
+            if homing_result is not None:
+                if homing_result == "OK":
+                    logging.info("Homing successful")
+                    self.update_attribute(f"{self.current_keyword}_info", "OK")
+
+                else:
+                    logging.warning("Homing errror")
+                    self.update_attribute(f"{self.current_keyword}_info", "ERROR")
 
     def target(self, *_, keyword: str):
         logging.info("Homing robot")
