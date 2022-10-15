@@ -1,7 +1,7 @@
 # Master Control Unit
 [![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg?style=flat)](https://github.com/RichardLitt/standard-readme)
 [![made-with-python](https://img.shields.io/badge/Made%20with-Python-1f425f.svg)](https://www.python.org/)
-![codeql](https://github.com/ppuska/mediscara.mcu/actions/workflows/codeql.yml/badge.svg)
+[![codeql](https://github.com/ppuska/mediscara.mcu/actions/workflows/codeql.yml/badge.svg)](https://github.com/ppuska/mediscara.mcu/actions/workflows/codeql.yml)
 [![Known Vulnerabilities](https://snyk.io/test/github/ppuska/mediscara.mcu/badge.svg)](https://snyk.io/test/github/ppuska/mediscara.mcu)
 
 This component serves as a proxy layer sending and receiving messages to and from a [FIWARE IoT Agent (JSON Payload)](https://github.com/FIWARE/tutorials.IoT-Agent-JSON/tree/131931b2e0460efbacd598c4c16b39872afa8042).
