@@ -19,30 +19,33 @@ class TCPServerProtocol(asyncio.Protocol):
         self.transport = None
 
     def connection_made(self, transport: transports.Transport) -> None:
-        peername = transport.get_extra_info('peername')
+        peername = transport.get_extra_info("peername")
         self.transport = transport
         _ = [callback(peername) for callback in self.__connected_callbacks]
 
     def connection_lost(self, exc: Exception | None) -> None:
         if exc is not None:
             print(f"Connection closed with exception: {exc}")
-        else:
-            print("Connection closed")
+
         self.transport.close()
         _ = [callback() for callback in self.__connection_lost_callbacks]
 
     def data_received(self, data: bytes) -> None:
         # filter out empty messages
-        if data in (b'\r', b'\n', b'\r\n'):
+        if data in (b"\r", b"\n", b"\r\n"):
             return
 
-        _ = [callback(data) for callback in self.__received_callbacks]
+        messages = data.split(b"\n")  # split if there are multiple messages
+        for message in messages:
+            if message != b'':
+                _ = [callback(message) for callback in self.__received_callbacks]
 
-    def register_callback(self,
-                          connected: Callable[[str], None] = None,
-                          lost: Callable[[], None] = None,
-                          received: Callable[[bytes], None] = None
-                          ) -> None:
+    def register_callback(
+        self,
+        connected: Callable[[str], None] = None,
+        lost: Callable[[], None] = None,
+        received: Callable[[bytes], None] = None,
+    ) -> None:
         """Register callback methods for the server events
 
         Args:
@@ -68,15 +71,19 @@ class TCPServerProtocol(asyncio.Protocol):
         # Every object that can call the send method is on the main thread
         # This means that a race condition cannot occur
         if isinstance(msg, str):
-            msg = msg.encode('ascii')
+            msg = msg.encode("ascii")
 
-        self.transport.write(msg)
+        if self.transport is not None:
+            self.transport.write(msg)
+
 
 class TCPServer:
     """Class to run a TCP Server Protocol in a separate thread"""
 
-    def __new__(cls: type[TCPServer], host: str = 'localhost', port: int = 65432) -> TCPServer:
-        if not hasattr(cls, 'instances'):
+    def __new__(
+        cls: type[TCPServer], host: str = "localhost", port: int = 65432
+    ) -> TCPServer:
+        if not hasattr(cls, "instances"):
             cls.instances: List[TCPServer] = []
 
         for instance in cls.instances:
@@ -91,10 +98,11 @@ class TCPServer:
         return new_instance
 
     # pylint: disable=too-many-arguments
-    def __init__(self,
-                 host: str,
-                 port: int,
-                 ) -> None:
+    def __init__(
+        self,
+        host: str,
+        port: int,
+    ) -> None:
 
         # check if the instance has been initialized before
         # pylint: disable=access-member-before-definition
@@ -118,13 +126,20 @@ class TCPServer:
         Args:
             msg (str): The string message to be sent
         """
+        # append the ending char if necessary
+        if isinstance(msg, bytes) and not msg.endswith(b'\n'):
+            msg += b'\n'
+        elif isinstance(msg, str) and not msg.endswith('\n'):
+            msg += '\n'
+
         self.__protocol.send(msg)
 
-    def register_callbacks(self,
-                           connected: Callable[[str], None] = None,
-                           lost: Callable[[], None] = None,
-                           received: Callable[[bytes], None] = None
-                           ) -> None:
+    def register_callbacks(
+        self,
+        connected: Callable[[str], None] = None,
+        lost: Callable[[], None] = None,
+        received: Callable[[bytes], None] = None,
+    ) -> None:
         """Register callback methods for the server events
 
         Args:
@@ -132,10 +147,9 @@ class TCPServer:
             lost (Callable[[], None], optional): Gets called when a connection is lost. Defaults to None.
             received (Callable[[bytes], None], optional): Gets called when a new message is received. Defaults to None.
         """
-        self.__protocol.register_callback(connected=connected,
-                                          lost=lost,
-                                          received=received
-                                          )
+        self.__protocol.register_callback(
+            connected=connected, lost=lost, received=received
+        )
 
     def _start_async(self):
         asyncio.run(self._target())
@@ -170,8 +184,10 @@ class TCPServer:
         """The port the server is listening on"""
         return self.__port
 
+
 class TCPClientProtocol(asyncio.Protocol):
     """Protocol class for tcp server implementation"""
+
     def __init__(self) -> None:
         super().__init__()
         self.connected_callbacks: List[Callable[[str], None]] = []
@@ -182,20 +198,25 @@ class TCPClientProtocol(asyncio.Protocol):
 
     def connection_made(self, transport: transports.Transport) -> None:
         self.transport = transport
-        peername = transport.get_extra_info('peername')
+        peername = transport.get_extra_info("peername")
         # call the callbacks
         _ = [callback(peername) for callback in self.connected_callbacks]
 
     def connection_lost(self, exc: Exception | None) -> None:
         if exc is not None:
-            logging.warning('Connection lost: %s', str(exc))
+            logging.warning("Connection lost: %s", str(exc))
 
         _ = [callback() for callback in self.lost_callbacks]
         if self.__on_conn_lost is not None:
             self.__on_conn_lost.set_result(True)
 
     def data_received(self, data: bytes) -> None:
-        _ = [callback(data) for callback in self.received_callbacks]
+        if data in (b"\r", b"\n", b"\r\n"):
+            return
+
+        messages = data.split(b"\n")  # split if there are multiple messages
+        for message in messages:
+            _ = [callback(message) for callback in self.received_callbacks]
 
     @property
     def on_connection_lost(self):
@@ -205,11 +226,14 @@ class TCPClientProtocol(asyncio.Protocol):
     def on_connection_lost(self, value: Future):
         self.__on_conn_lost = value
 
+
 class TCPCLient:
     """Class to run a TCP Client in a separate protocol"""
 
-    def __new__(cls: type[TCPCLient], host: str = 'localhost', port: int = 65432) -> TCPServer:
-        if not hasattr(cls, 'instances'):
+    def __new__(
+        cls: type[TCPCLient], host: str = "localhost", port: int = 65432
+    ) -> TCPServer:
+        if not hasattr(cls, "instances"):
             cls.instances: List[TCPCLient] = []
 
         for instance in cls.instances:
@@ -224,10 +248,11 @@ class TCPCLient:
         return new_instance
 
     # pylint: disable=too-many-arguments
-    def __init__(self,
-                 host: str,
-                 port: int,
-                 ) -> None:
+    def __init__(
+        self,
+        host: str,
+        port: int,
+    ) -> None:
 
         # check if the instance has been initialized before
         # pylint: disable=access-member-before-definition
@@ -248,15 +273,16 @@ class TCPCLient:
     def send(self, msg: str | bytes):
         """Sends data via the client"""
         if isinstance(msg, str):
-            msg = msg.encode('ascii')
+            msg = msg.encode("ascii")
 
         self.__protocol.transport.write(msg)
 
-    def register_callbacks(self,
-                           connected: Callable[[str], None] = None,
-                           lost: Callable[[], None] = None,
-                           received: Callable[[bytes], None] = None
-                           ) -> None:
+    def register_callbacks(
+        self,
+        connected: Callable[[str], None] = None,
+        lost: Callable[[], None] = None,
+        received: Callable[[bytes], None] = None,
+    ) -> None:
         """Register callback methods for the server events
 
         Args:

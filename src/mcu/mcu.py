@@ -4,21 +4,23 @@ import json
 import logging
 import os
 import sys
-from dotenv import load_dotenv
+from typing import List
+from dotenv import dotenv_values
 
 from flask import Flask, make_response, request
 
-from .models.command import Command
-from .config import SERIAL_CONNECTIONS, TCP_CONNECTIONS
-from . import config
+
+from .models.user_defined import Service, load
+from .config import SERIAL_CONNECTIONS, TCP_CONNECTIONS, clear_errors
 
 logging.getLogger("werkzeug").disabled = True  # disable flask logger
 
 # load the environment variables from .env
-load_dotenv()
+config = dotenv_values()
 
-HOST = os.getenv('HOST')
-PORT = os.getenv('PORT')
+HOST = config["HOST"]
+PORT = config["PORT"]
+
 
 if HOST is None or PORT is None:
     logging.fatal("Please set the HOST and PORT environment variables")
@@ -28,32 +30,53 @@ if HOST is None or PORT is None:
 app = Flask(__name__)
 
 # Load the command class instances
-COMMANDS = Command.load_commands()
+COMMANDS, SERVICES = load()
 
-@app.route('/api', methods=["GET", "POST"])
+
+@app.route("/api", methods=["GET", "POST"])
 def api():
     """Main entry point for the MCU api requests"""
 
     data_json = json.loads(request.data)
-    keys = data_json.keys()
+    keys = data_json.keys()  # type: List[str]
+
+    if len(keys) != 1:
+        error_msg = "Multiple commands got called"
+        logging.error(error_msg)
+        Service.update_attribute("error", info=error_msg)
+        return make_response(json.dumps({"": "BAD REQUEST"}), 400)
+
+    key = list(keys)[0]
 
     logging.info("Incoming %s: %s", request.method, data_json)
 
     if request.method == "GET":
-        return make_response(json.dumps({'': 'BAD REQUEST'}), 400)
+        return make_response(json.dumps({"": "BAD REQUEST"}), 400)
 
     if request.method == "POST":
         for command in COMMANDS:
-            if command.keyword in keys:
+            matched = False
+
+            if isinstance(command.keywords, str):
+                if command.keywords == key:
+                    matched = True
+
+            # check if any of the command keywords are in the keys
+            elif any(key in command.keywords for key in keys):
+                matched = True
+
+            # if a match is found run the command
+            if matched:
+
                 if command.running:
-                    return make_response(json.dumps({command.keyword: 'BUSY'}), 503)
+                    return make_response(json.dumps({key: "BUSY"}), 503)
 
-                args = data_json[command.keyword]  # get the value for the key
+                args = data_json[key]  # get the value for the key
 
-                command.execute(args)
-                return make_response(json.dumps({command.keyword: 'RECEIVED'}), 200)
+                command.execute(args, keyword=key)
+                return make_response(json.dumps({key: "RECEIVED"}), 200)
 
-    return make_response(json.dumps({'': 'BAD_COMMAND'}), 400)
+    return make_response(json.dumps({"": "BAD_COMMAND"}), 400)
 
 
 def main():
@@ -66,6 +89,6 @@ def main():
     for value in SERIAL_CONNECTIONS:
         value.start()
 
-    config.clear_errors()  # clear the errors
+    clear_errors()  # clear the errors
 
     app.run(host=HOST, port=PORT)

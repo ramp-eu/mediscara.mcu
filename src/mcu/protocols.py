@@ -1,56 +1,73 @@
 """Module for the communication protocol between the IoT Device and the MCU"""
 
 from dataclasses import dataclass, field
-from enum import Enum
-from typing import ClassVar
+from enum import Enum, auto
+from typing import ClassVar, Dict, List
 
 
 @dataclass
 class Message:
     """A representation of the messages in the protocol"""
+
     class TYPE(Enum):
         """Message types"""
-        IAC = 'IAC'
-        RUN = 'RUN'
 
-        RESULT = 'RESULT'
+        IAC = "IAC"
+        RUN = "RUN"
 
-        OK = 'OK'
-        BUSY = 'BUSY'
-        ERROR = 'ERROR'
+        KEY_VALUE = "KEY_VALUE"
+        STATUS = "STATUS"
 
-    SUCCESS: ClassVar[str] = 'SUCCESS'
-    ERROR: ClassVar[str] = 'ERROR'
+        OK = "OK"
+        BUSY = "BUSY"
+        ERROR = "ERROR"
+
+    SUCCESS: ClassVar[str] = "SUCCESS"
+    ERROR: ClassVar[str] = "ERROR"
 
     type: TYPE = field(default=None)
-    data: str = field(default=None)
-    additional: str = field(default=None)
+    data: List[str] = field(default=None)
+
+    data_kw: Dict[str, str] = field(default=None)
+
+    raw: str = field(default=None)
 
     def __str__(self):
-        if self.additional is not None:
-            return f'{self.type}|{self.additional}|{self.data}'
-
-        return f'{self.type}|{self.data}'
+        return f'{self.type.value}|{"|".join(self.data)}'
 
     @classmethod
-    def parse(cls, message: str | bytes):
+    def parse(cls, message: str | bytes | bytearray):
         """Parses the message string and converts it the a Message object"""
-        if isinstance(message, bytes):
+        if isinstance(message, (bytes, bytearray)):
             message = message.decode()
 
         instance = cls()
 
+        instance.raw = message
+
+        tokens = message.split("|")
+
+        key = tokens[0]  # the first element
+        if len(tokens) > 1:
+            instance.data = tokens[1:]  # all the other elements
+
         for type_ in Message.TYPE:
-            if message.startswith(type_.value):
+            if key == type_.value:
                 instance.type = type_
                 break
 
-        if not instance.is_response:
-            instance.data = message.split('|')[-1]
+        else:  # no break == no match
+            instance.type = Message.TYPE.KEY_VALUE
+            instance.data_kw = {}
+            # process key-value data
+            for index, element in enumerate(tokens):
+                if index % 2 == 0:
+                    # even index 0, 2, ...
+                    try:
+                        instance.data_kw[element] = tokens[index + 1]
 
-            if instance.type == Message.TYPE.RESULT:
-                # get the SUCCESS or ERROR
-                instance.additional = message.split('|')[1]
+                    except IndexError:
+                        pass
 
         return instance
 
