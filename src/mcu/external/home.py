@@ -16,7 +16,7 @@ class HomeCommand(Command):
         message = Message.parse(msg)
 
         if message.type == Message.TYPE.KEY_VALUE:
-            homing_result = message.data_kw["HOMING"]
+            homing_result = message.data_kw.get("HOMING")
             if homing_result is not None:
                 if homing_result == "OK":
                     logging.info("Homing successful")

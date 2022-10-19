@@ -4,6 +4,7 @@ from enum import Enum, auto
 import logging
 from mcu.models.user_defined import Command
 from mcu.config import add_tcp_server
+from mcu.protocols import Message
 
 
 class Measure(Command):
@@ -45,23 +46,25 @@ class Measure(Command):
     def tcp_received(self, msg: bytes):
         """Gets called when a new TCP message comes in"""
 
-    def target(self, *args, keyword: str):
-        if keyword == self.MEASURE_PCB:
-            logging.info(self.MEASURE_PCB)
+        message = Message.parse(msg)
 
+        if message.type == Message.TYPE.KEY_VALUE:
+            if "M1" in message.data_kw.keys():
+                # process the measurement
+                self.update_attribute(f"{self.current_keyword}_info", str(message))
+
+    def target(self, *args, keyword: str):
+        logging.info("Measuring: %s", keyword)
+        if keyword == self.MEASURE_PCB:
             self.__tcp.send("IAC|MEASURE_PCB")
             self.__measurement = self.MEASURE_PCB
 
 
         elif keyword == self.MEASURE_LABEL:
-            logging.info(self.MEASURE_LABEL)
-
             self.__tcp.send("IAC|MEASURE_LABEL")
             self.__measurement = self.MEASURE_LABEL
 
         elif keyword == self.MEASURE_ASSEMBLY:
-            logging.info(self.MEASURE_ASSEMBLY)
-
             self.__tcp.send("IAC|MEASURE_ASSEMBLY")
             self.__measurement = self.MEASURE_ASSEMBLY
 
