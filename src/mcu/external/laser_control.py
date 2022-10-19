@@ -30,6 +30,14 @@ class LaserControl(Command):
                 logging.debug("Setting duty cycle to %s", message.data[1])
                 self.__serial.send(f"duty|{message.data[1]}|\n")
 
+            elif message.data[0] == "LASER_ENABLE":
+                # open the shutter
+                self.__serial.send("shutter|on|\n")
+
+            elif message.data[0] == "LASER_DISABLE":
+                # close the shutter
+                self.__serial.send("shutter|off|\n")
+
             elif message.data[0] == "START_LASER":
                 logging.info("Starting laser")
                 self.__serial.send("pwm|on|\n")
