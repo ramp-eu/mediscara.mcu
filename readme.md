@@ -3,6 +3,7 @@
 [![made-with-python](https://img.shields.io/badge/Made%20with-Python-1f425f.svg)](https://www.python.org/)
 [![codeql](https://github.com/ppuska/mediscara.mcu/actions/workflows/codeql.yml/badge.svg)](https://github.com/ppuska/mediscara.mcu/actions/workflows/codeql.yml)
 [![Known Vulnerabilities](https://snyk.io/test/github/ppuska/mediscara.mcu/badge.svg)](https://snyk.io/test/github/ppuska/mediscara.mcu)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 This component serves as a proxy layer sending and receiving messages to and from a [FIWARE IoT Agent (JSON Payload)](https://github.com/FIWARE/tutorials.IoT-Agent-JSON/tree/131931b2e0460efbacd598c4c16b39872afa8042).
 The Master Control Unit (MCU) can be used to achieve communication to embedded devices which do not support the HTTP transport protocol or the [NGSI-v2](https://fiware-tutorials.readthedocs.io/en/stable/getting-started/index.html) data model.
