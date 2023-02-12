@@ -12,6 +12,15 @@ Information about the installation can be found [here](https://docs.docker.com/e
 
 Python is necessary to run the MMCU, you can install it from [here](https://www.python.org/downloads/).
 
+## Overiview
+
+![Overview of the components](./img/MMCU-components.drawio.png)
+In the above image we can see the necessary components for the setup.
+In the next section we will install and configure every one of the components.
+
+A brief overview of the flow of a command can be seen on the next image:
+![The command flow](./img/MMCU-flow.drawio.png)
+
 ## Installation
 
 To install the application, navigate to the root of the directory you've downloaded the source to and run `pip install .`.
@@ -210,6 +219,7 @@ def target(self, *args, keyword: str):
     # dont update the status as it will come back later through TCP socket
     self.result = None
 ```
+
 
 ## Using the MMCU 
 
