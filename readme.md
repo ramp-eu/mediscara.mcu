@@ -245,3 +245,14 @@ This message is used to inform the other side that the requested program has fin
 
 ---
 > All of the messages are ended with a `\n` terminator character.
+
+## Example configuration
+
+A simple example configuration is provided in the reppository.
+It demonstrates the communication possibilities of the MMCU.
+These include TCP socket and serial server instances.
+
+The example script also provides heavy documentation in the code and describes 
+what each function and method does in detail.
+
+You can see the example script [here](/src/mcu/external/example.py).
