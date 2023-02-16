@@ -1,0 +1,230 @@
+{
+	"info": {
+		"_postman_id": "fecf02f8-d000-487c-9628-45610a49f40b",
+		"name": "Tutorial",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "19559907"
+	},
+	"item": [
+		{
+			"name": "Create Service Group",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201 (Created)\", function () {\r",
+							"    pm.response.to.have.status(201);\r",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "fiware-service",
+						"value": "{{fiware_service}}",
+						"type": "text"
+					},
+					{
+						"key": "fiware-servicepath",
+						"value": "/",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"services\": [\r\n        {\r\n            \"apikey\": \"exampleApiKey\",\r\n            \"entity_type\": \"Thing\",\r\n            \"resource\": \"/iot/json\"\r\n        }\r\n    ]\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:4041/iot/services",
+					"host": [
+						"localhost"
+					],
+					"port": "4041",
+					"path": [
+						"iot",
+						"services"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create MCU",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201 (Created)\", function () {\r",
+							"    pm.response.to.have.status(201);\r",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "fiware-service",
+						"value": "{{fiware_service}}",
+						"type": "text"
+					},
+					{
+						"key": "fiware-servicepath",
+						"value": "/",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"devices\": [\r\n        {\r\n            \"device_id\": \"MCUTest\",\r\n            \"entity_name\": \"MCU:Test\",\r\n            \"entity_type\": \"MCU\",\r\n            \"protocol\": \"PDI-IoTA-JSON\",\r\n            \"transport\": \"HTTP\",\r\n            \"endpoint\": \"http://localhost:6900/api\",\r\n            \"attributes\": [\r\n                {\r\n                    \"object_id\": \"e\",\r\n                    \"name\": \"error\",\r\n                    \"type\": \"Text\"\r\n                }\r\n            ],\r\n            \"commands\": [\r\n                {\r\n                    \"name\": \"start_laser_cut\",\r\n                    \"type\": \"command\"\r\n                },\r\n                {  \r\n                    \"name\": \"home\",\r\n                    \"type\": \"command\"\r\n                }\r\n            ]\r\n\r\n        }\r\n    ]\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:4041/iot/devices",
+					"host": [
+						"localhost"
+					],
+					"port": "4041",
+					"path": [
+						"iot",
+						"devices"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Send Home Command",
+			"request": {
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "fiware-service",
+						"value": "{{fiware_service}}",
+						"type": "text"
+					},
+					{
+						"key": "fiware-servicepath",
+						"value": "/",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"home\": {\r\n        \"type\": \"command\",\r\n        \"value\": \"\"\r\n    }\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:1026/v2/entities/MCU:Test/attrs",
+					"host": [
+						"localhost"
+					],
+					"port": "1026",
+					"path": [
+						"v2",
+						"entities",
+						"MCU:Test",
+						"attrs"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "New Request",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "fiware-service",
+						"value": "mediscara",
+						"type": "text"
+					},
+					{
+						"key": "fiware-servicepath",
+						"value": "/",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "localhost:4041/iot/devices/MCUTest",
+					"host": [
+						"localhost"
+					],
+					"port": "4041",
+					"path": [
+						"iot",
+						"devices",
+						"MCUTest"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Entities",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "fiware-service",
+						"value": "{{fiware_service}}",
+						"type": "text"
+					},
+					{
+						"key": "fiware-servicepath",
+						"value": "/",
+						"type": "text"
+					},
+					{
+						"key": "X-Auth-Token",
+						"value": "{{access_token}}",
+						"type": "text",
+						"disabled": true
+					}
+				],
+				"url": {
+					"raw": "{{server_ip}}:{{orion_port}}/v2/entities/",
+					"host": [
+						"{{server_ip}}"
+					],
+					"port": "{{orion_port}}",
+					"path": [
+						"v2",
+						"entities",
+						""
+					],
+					"query": [
+						{
+							"key": "options",
+							"value": "keyValues",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
