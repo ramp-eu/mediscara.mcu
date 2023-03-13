@@ -256,3 +256,4 @@ The example script also provides heavy documentation in the code and describes
 what each function and method does in detail.
 
 You can see the example script [here](/src/mcu/external/example.py).
+You can also read the [documentation](./docs/ExampleConfig.md) and watch the [guide video](./docs/guide.mp4) 

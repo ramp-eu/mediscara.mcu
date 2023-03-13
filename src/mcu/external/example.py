@@ -22,7 +22,8 @@ class ExampleCommand(Command):
     def __init__(self) -> None:
         # register the superclass with the keyword
         # whenever a new FIWARE command comes in and matches with the given keyword, the class' 'target' method will be executed
-        super().__init__(keywords='home')
+        super().__init__(
+            keywords=['home', 'start_laser_cut', 'stop_laser_cut'])
 
         # request a serial server instance from the MCU runtime
         self.serial = add_serial_server('COM8', baudrate=9600)
@@ -41,8 +42,16 @@ class ExampleCommand(Command):
 
     def target(self, *args, keyword: str):
         """This method is executed whenever one of the registered keywords match the incoming request"""
-        # send a message via socket
-        self.tcp.send("HOME")
+
+        if keyword == 'home':
+            # send a message via socket
+            self.tcp.send("HOME")
+
+        elif keyword == 'start_laser_cut':
+            self.tcp.send("START_LASER_CUT")
+
+        elif keyword == 'stop_laser_cut':
+            self.tcp.send("STOP_LASER_CUT")
 
         # report back to the runtime
         # dont update the status as it will come back later through TCP socket
@@ -68,3 +77,17 @@ class ExampleCommand(Command):
             # update the info attribute
             print("Homing successful")
             self.update_attribute('home_info', 'OK')
+
+        elif msg == b'STARTED':
+            print('Laser started')
+            self.update_attribute('start_laser_cut_info', 'OK')
+
+        elif msg.startswith(b'DURATION'):
+            print("Laser stopped")
+            duration = msg[msg.find(b'|') + 1:].decode()
+            self.update_attribute('stop_laser_cut_info', duration)
+
+        elif msg.startswith(b'ERROR'):
+            # update the error attriuóbute
+            print("An error has occurred")
+            self.update_attribute('error', msg.decode()[len('ERROR') + 1:])
